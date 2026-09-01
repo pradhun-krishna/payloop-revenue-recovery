@@ -130,4 +130,4 @@ Copy `.env.example` to `backend/.env`:
 
 ## License
 
-Built for the Razorpay Buildathon 2024. Educational use.
+Built for the Razorpay Buildathon 2026. Educational use.
