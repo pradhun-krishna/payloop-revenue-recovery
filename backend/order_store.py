@@ -79,3 +79,7 @@ order_store = _initialize_order_store()
 
 def get_all_orders() -> dict:
     return order_store
+
+def reset_store():
+    global order_store
+    order_store = _initialize_order_store()

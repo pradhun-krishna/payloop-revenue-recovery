@@ -184,6 +184,15 @@ async def reset_agent():
     agent_state["recovered"] = 0
     agent_state["flagged"] = 0
     audit_logger.clear()
+    
+    from order_store import reset_store
+    reset_store()
+    
+    import os
+    settlements_path = os.path.join(os.path.dirname(__file__), "synthetic_settlements.json")
+    if os.path.exists(settlements_path):
+        os.remove(settlements_path)
+        
     return {"status": "idle"}
 
 
