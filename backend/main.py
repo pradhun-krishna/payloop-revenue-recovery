@@ -103,8 +103,8 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "synthetic_transactions.json
 def _load_transactions() -> list[dict]:
     """Load synthetic transactions from disk. Generate if missing (e.g. fresh git clone)."""
     if not os.path.exists(DATA_PATH):
-        from data_generator import generate_batch
-        data = generate_batch(200)
+        from data_generator import generate_transactions
+        data = generate_transactions(200)
         with open(DATA_PATH, "w", encoding="utf-8") as f:
             json.dump(data, f, indent=2)
         return data
