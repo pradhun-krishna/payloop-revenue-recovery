@@ -236,6 +236,46 @@ async def run_reconciler():
     return result
 
 # ---------------------------------------------------------------------------
+# Copilot Endpoints (Layer 3)
+# ---------------------------------------------------------------------------
+
+@app.post("/api/copilot/chat")
+async def copilot_chat(request: dict):
+    from copilot import ask_copilot
+    from reporter import load_report
+    from order_store import get_all_orders
+    
+    report = load_report() or {}
+    orders = get_all_orders()
+    
+    # Bundle relevant state for the LLM
+    context = {
+        "agent_status": agent_state,
+        "recent_report": report,
+        "total_orders": len(orders)
+    }
+    
+    answer = await ask_copilot(request.get("message", ""), context)
+    return {"reply": answer}
+
+@app.post("/api/copilot/draft-email")
+async def copilot_draft_email(request: dict):
+    from copilot import draft_recovery_email
+    
+    transaction_id = request.get("transaction_id")
+    if not transaction_id:
+        return {"error": "Missing transaction_id"}
+        
+    transactions = _load_transactions()
+    transaction = next((t for t in transactions if t["transaction_id"] == transaction_id), None)
+    
+    if not transaction:
+        return {"error": "Transaction not found"}
+        
+    email_text = await draft_recovery_email(transaction)
+    return {"draft": email_text}
+
+# ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
 
 @app.websocket("/ws/agent-feed")

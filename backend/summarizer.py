@@ -49,7 +49,7 @@ async def generate_nl_summary(report: dict) -> str:
         import google.generativeai as genai
 
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-3.6-flash")
 
         # Build a concise prompt with the key report data
         report_excerpt = {
@@ -110,7 +110,7 @@ Return ONLY valid JSON. No markdown. No explanation. Just this:
 """
     try:
         import google.generativeai as genai
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-3.6-flash")
         
         response = model.generate_content(prompt)
         text = response.text.strip()
@@ -163,7 +163,7 @@ Write directly. No intro. No "Here is your summary". Just the 3 sentences.
 """
     try:
         import google.generativeai as genai
-        model = genai.GenerativeModel("gemini-1.5-flash")
+        model = genai.GenerativeModel("gemini-3.6-flash")
         
         response = model.generate_content(prompt)
         return response.text.strip()

@@ -12,6 +12,8 @@ import ExceptionPanel from './components/ExceptionPanel';
 import TabSwitcher from './components/TabSwitcher';
 import WebhookGuardianTab from './components/WebhookGuardianTab';
 import SettlementReconcilerTab from './components/SettlementReconcilerTab';
+import CopilotWidget from './components/CopilotWidget';
+import RevenueChart from './components/RevenueChart';
 
 export default function App() {
   const { messages, lastMessage, isConnected, clearMessages } = useWebSocket();
@@ -126,6 +128,10 @@ export default function App() {
             </div>
           </div>
 
+          <div className="px-24 pt-16">
+            <RevenueChart transactions={processedTxns} />
+          </div>
+
           {/* Main two-column layout */}
           <div className="flex gap-[1px] px-24 py-16 flex-1 min-h-0">
             {/* Left column — 65% */}
@@ -149,6 +155,8 @@ export default function App() {
 
       {activeTab === 'guardian' && <WebhookGuardianTab lastMessage={lastMessage} />}
       {activeTab === 'reconciler' && <SettlementReconcilerTab />}
+      
+      <CopilotWidget />
     </div>
   );
 }
