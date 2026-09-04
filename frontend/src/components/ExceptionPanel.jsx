@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { formatINRFromRupees } from '../lib/utils';
+import { API_URL } from '../config';
 
 /**
  * ExceptionPanel — Lists unresolved + escalated transactions.
@@ -23,7 +24,7 @@ export default function ExceptionPanel({ transactions }) {
   const handleDraftEmail = async (txn) => {
     setIsDrafting(txn.transaction_id);
     try {
-      const res = await fetch('http://localhost:8000/api/copilot/draft-email', {
+      const res = await fetch(`${API_URL}/api/copilot/draft-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ transaction_id: txn.transaction_id })
@@ -34,6 +35,28 @@ export default function ExceptionPanel({ transactions }) {
       console.error(err);
     } finally {
       setIsDrafting(false);
+    }
+  };
+
+  const [liveLinks, setLiveLinks] = useState({});
+  const [isLinking, setIsLinking] = useState(false);
+
+  const handleLiveLink = async (txn) => {
+    setIsLinking(txn.transaction_id);
+    try {
+      const res = await fetch(`${API_URL}/api/live-payment-link`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ transaction_id: txn.transaction_id })
+      });
+      const data = await res.json();
+      if (data.url) {
+        setLiveLinks(prev => ({ ...prev, [txn.transaction_id]: data.url }));
+      }
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLinking(false);
     }
   };
 
@@ -64,6 +87,9 @@ export default function ExceptionPanel({ transactions }) {
             dotColor="#FF4D6A"
             onDraft={handleDraftEmail}
             isDrafting={isDrafting}
+            onLiveLink={handleLiveLink}
+            isLinking={isLinking}
+            liveLinks={liveLinks}
           />
         )}
 
@@ -74,6 +100,9 @@ export default function ExceptionPanel({ transactions }) {
             dotColor="#F5A623"
             onDraft={handleDraftEmail}
             isDrafting={isDrafting}
+            onLiveLink={handleLiveLink}
+            isLinking={isLinking}
+            liveLinks={liveLinks}
           />
         )}
 
@@ -84,6 +113,9 @@ export default function ExceptionPanel({ transactions }) {
             dotColor="#8B90A7"
             onDraft={handleDraftEmail}
             isDrafting={isDrafting}
+            onLiveLink={handleLiveLink}
+            isLinking={isLinking}
+            liveLinks={liveLinks}
           />
         )}
       </div>
@@ -118,7 +150,7 @@ export default function ExceptionPanel({ transactions }) {
   );
 }
 
-function ExceptionGroup({ title, items, dotColor, onDraft, isDrafting }) {
+function ExceptionGroup({ title, items, dotColor, onDraft, isDrafting, onLiveLink, isLinking, liveLinks }) {
   return (
     <div className="mb-12 last:mb-0">
       <div className="flex items-center gap-[6px] mb-[6px]">
@@ -135,27 +167,51 @@ function ExceptionGroup({ title, items, dotColor, onDraft, isDrafting }) {
         {items.slice(0, 20).map((txn, i) => (
           <div
             key={txn.transaction_id || i}
-            className="flex items-center justify-between text-[12px] py-[4px] px-[8px] rounded-indicator group"
+            className="flex flex-col text-[12px] py-[6px] px-[8px] rounded-indicator group transition-colors"
             style={{ backgroundColor: i % 2 === 0 ? 'transparent' : '#1D2035' }}
           >
-            <div className="flex-1 flex justify-between items-center pr-12">
-              <span className="font-mono text-text-tertiary">
-                {txn.transaction_id?.slice(0, 10)}...
-              </span>
-              <span className="text-text-secondary text-[11px] truncate mx-[8px] max-w-[100px]">
-                {txn.failure_class?.replace(/_/g, ' ')}
-              </span>
-              <span className="text-text-primary tabular-nums text-[11px]">
-                {formatINRFromRupees(txn.amount_inr || 0)}
-              </span>
+            <div className="flex items-center justify-between">
+              <div className="flex-1 flex items-center pr-12">
+                <span className="font-mono text-text-tertiary">
+                  {txn.transaction_id?.slice(0, 10)}...
+                </span>
+                <span className="text-text-secondary text-[11px] truncate mx-[8px] flex-1 max-w-[120px]">
+                  {txn.failure_class?.replace(/_/g, ' ')}
+                </span>
+                <span className="text-text-primary tabular-nums text-[11px] font-medium w-[60px]">
+                  {formatINRFromRupees(txn.amount_inr || 0)}
+                </span>
+              </div>
+              
+              <div className="flex gap-[6px] opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0">
+                {!liveLinks[txn.transaction_id] && (
+                  <button
+                    onClick={() => onLiveLink(txn)}
+                    disabled={isLinking === txn.transaction_id}
+                    className="px-[8px] py-[2px] bg-blue-500/20 text-blue-400 text-[10px] rounded border border-blue-500/30 hover:bg-blue-500 hover:text-white transition-colors"
+                  >
+                    {isLinking === txn.transaction_id ? '...' : 'Live Link'}
+                  </button>
+                )}
+                <button
+                  onClick={() => onDraft(txn)}
+                  disabled={isDrafting === txn.transaction_id}
+                  className="px-[8px] py-[2px] bg-accent/20 text-accent text-[10px] rounded border border-accent/30 hover:bg-accent hover:text-white transition-colors"
+                >
+                  {isDrafting === txn.transaction_id ? '...' : 'AI Email'}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={() => onDraft(txn)}
-              disabled={isDrafting === txn.transaction_id}
-              className="opacity-0 group-hover:opacity-100 transition-opacity px-[8px] py-[2px] bg-accent/20 text-accent text-[10px] rounded border border-accent/30 hover:bg-accent hover:text-white flex-shrink-0"
-            >
-              {isDrafting === txn.transaction_id ? '...' : 'AI Email'}
-            </button>
+            
+            {/* Show Live Link if generated */}
+            {liveLinks[txn.transaction_id] && (
+              <div className="mt-[8px] pt-[8px] border-t border-border/50">
+                <span className="text-[10px] text-text-tertiary uppercase tracking-wider mr-[8px]">Live Checkout URL:</span>
+                <a href={liveLinks[txn.transaction_id]} target="_blank" rel="noreferrer" className="text-blue-400 hover:text-blue-300 hover:underline font-mono text-[11px]">
+                  {liveLinks[txn.transaction_id]}
+                </a>
+              </div>
+            )}
           </div>
         ))}
         {items.length > 20 && (

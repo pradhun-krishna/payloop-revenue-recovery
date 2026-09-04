@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import WeeklyDigestCard from './WeeklyDigestCard';
 import GapPanel from './GapPanel';
 import SettlementTable from './SettlementTable';
+import { API_URL } from '../config';
 
 export default function SettlementReconcilerTab() {
   const [report, setReport] = useState(null);
@@ -10,7 +11,7 @@ export default function SettlementReconcilerTab() {
   const handleRunReconciler = async () => {
     setLoading(true);
     try {
-      const res = await fetch('http://localhost:8000/api/run-reconciliation', { method: 'POST' });
+      const res = await fetch(`${API_URL}/api/run-reconciliation`, { method: 'POST' });
       const data = await res.json();
       setReport(data);
     } catch (err) {

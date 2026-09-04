@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import GuardianStatBar from './GuardianStatBar';
 import RevenueImpactCard from './RevenueImpactCard';
 import GuardianFeed from './GuardianFeed';
+import { API_URL } from '../config';
 
 export default function WebhookGuardianTab({ lastMessage }) {
   const [report, setReport] = useState(null);
@@ -18,7 +19,7 @@ export default function WebhookGuardianTab({ lastMessage }) {
     setLoading(true);
     setFeed([]);
     try {
-      const res = await fetch('http://localhost:8000/api/run-guardian', { method: 'POST' });
+      const res = await fetch(`${API_URL}/api/run-guardian`, { method: 'POST' });
       const data = await res.json();
       setReport(data);
       // Populate feed from recovered orders

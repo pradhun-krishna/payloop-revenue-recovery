@@ -1,9 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { API_URL } from '../config';
 
 export default function CopilotWidget() {
   const [isOpen, setIsOpen] = useState(false);
   const [messages, setMessages] = useState([
-    { role: 'assistant', text: 'Hi! I am PayLoop Copilot. Ask me anything about your current dashboard data.' }
+    { role: 'assistant', text: 'Hi! I am the PayLoop Copilot. Ask me anything about your current live data or revenue metrics.' }
   ]);
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -27,7 +28,7 @@ export default function CopilotWidget() {
     setIsLoading(true);
 
     try {
-      const res = await fetch('http://localhost:8000/api/copilot/chat', {
+      const res = await fetch(`${API_URL}/api/copilot/chat`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: userMessage })

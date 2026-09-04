@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { WS_URL } from '../config';
 
 /**
  * WebSocket hook for the real-time agent feed.
@@ -22,7 +23,7 @@ export function useWebSocket() {
 
     setConnectionStatus('connecting');
 
-    const ws = new WebSocket('ws://localhost:8000/ws/agent-feed');
+    const ws = new WebSocket(`${WS_URL}/ws/agent-feed`);
 
     ws.onopen = () => {
       setIsConnected(true);

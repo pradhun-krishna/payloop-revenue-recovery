@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
+import { API_URL } from '../config';
 
 /**
  * Polls GET /api/status every 2 seconds while the agent is running.
@@ -16,7 +17,7 @@ export function useBatchStatus() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/status');
+      const res = await fetch(`${API_URL}/api/status`);
       if (res.ok) {
         const data = await res.json();
         setStatus(data);
@@ -37,7 +38,7 @@ export function useBatchStatus() {
 
   const startAgent = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/run-agent', { method: 'POST' });
+      const res = await fetch(`${API_URL}/api/run-agent`, { method: 'POST' });
       return await res.json();
     } catch (e) {
       console.error('[batch] Failed to start agent:', e);
@@ -47,7 +48,7 @@ export function useBatchStatus() {
 
   const resetAgent = useCallback(async () => {
     try {
-      const res = await fetch('http://localhost:8000/api/reset', { method: 'POST' });
+      const res = await fetch(`${API_URL}/api/reset`, { method: 'POST' });
       const data = await res.json();
       setStatus({ status: 'idle', processed: 0, total: 200, recovered: 0, flagged: 0 });
       return data;

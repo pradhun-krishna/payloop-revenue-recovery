@@ -98,9 +98,14 @@ DATA_PATH = os.path.join(os.path.dirname(__file__), "synthetic_transactions.json
 
 
 def _load_transactions() -> list[dict]:
-    """Load synthetic transactions from disk."""
+    """Load synthetic transactions from disk. Generate if missing (e.g. fresh git clone)."""
     if not os.path.exists(DATA_PATH):
-        return []
+        from data_generator import generate_batch
+        data = generate_batch(200)
+        with open(DATA_PATH, "w", encoding="utf-8") as f:
+            json.dump(data, f, indent=2)
+        return data
+        
     with open(DATA_PATH, "r", encoding="utf-8") as f:
         return json.load(f)
 
@@ -283,6 +288,39 @@ async def copilot_draft_email(request: dict):
         
     email_text = await draft_recovery_email(transaction)
     return {"draft": email_text}
+
+@app.post("/api/live-payment-link")
+async def create_live_payment_link(request: dict):
+    from razorpay_client import RazorpayClient
+    
+    transaction_id = request.get("transaction_id")
+    if not transaction_id:
+        return {"error": "Missing transaction_id"}
+        
+    transactions = _load_transactions()
+    transaction = next((t for t in transactions if t["transaction_id"] == transaction_id), None)
+    
+    if not transaction:
+        return {"error": "Transaction not found"}
+        
+    # Force Live Mode for this specific call to prove it works
+    client = RazorpayClient()
+    client.mock_mode = False 
+    
+    result = await client.send_payment_link(
+        amount=transaction.get("amount", 50000),
+        customer_email=transaction.get("customer_email", "test@example.com"),
+        customer_phone=transaction.get("customer_phone", "9999999999"),
+        customer_name=transaction.get("customer_name", "Test Customer"),
+        description=f"Live Recovery for {transaction.get('product', 'Item')}"
+    )
+    
+    await client.close()
+    
+    if result.get("success"):
+        return {"url": result["payment_link"]["short_url"]}
+    else:
+        return {"error": result.get("error", "Unknown error from Razorpay API")}
 
 # ---------------------------------------------------------------------------
 # ---------------------------------------------------------------------------
