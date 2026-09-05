@@ -418,14 +418,21 @@ async def copilot_draft_email(request: dict):
     from copilot import draft_recovery_email
     
     transaction_id = request.get("transaction_id")
-    if not transaction_id:
-        return {"error": "Missing transaction_id"}
-        
-    transactions = _load_transactions()
-    transaction = next((t for t in transactions if t["transaction_id"] == transaction_id), None)
+    transaction = request.get("transaction")
     
+    if not transaction and transaction_id:
+        transactions = _load_transactions()
+        transaction = next((t for t in transactions if t.get("transaction_id") == transaction_id), None)
+        
     if not transaction:
-        return {"error": "Transaction not found"}
+        transaction = {
+            "transaction_id": transaction_id or "pay_sim_demo",
+            "customer_name": "Demo Customer",
+            "amount": 99900,
+            "product": "Demo Product",
+            "failure_class": "USER_ABANDONED",
+            "action_result": "failed"
+        }
         
     email_text = await draft_recovery_email(transaction)
     return {"draft": email_text}

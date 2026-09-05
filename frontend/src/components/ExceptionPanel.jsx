@@ -27,7 +27,7 @@ export default function ExceptionPanel({ transactions }) {
       const res = await fetch(`${API_URL}/api/copilot/draft-email`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transaction_id: txn.transaction_id })
+        body: JSON.stringify({ transaction_id: txn.transaction_id, transaction: txn })
       });
       const data = await res.json();
       setDraftData({ txn, draft: data.draft });
