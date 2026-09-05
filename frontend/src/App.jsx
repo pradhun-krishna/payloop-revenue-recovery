@@ -58,6 +58,20 @@ export default function App() {
     await batchStatus.resetAgent();
   }, [batchStatus, clearMessages]);
 
+  const [razorpayKey, setRazorpayKey] = useState(import.meta.env.VITE_RAZORPAY_KEY_ID || "");
+
+  useEffect(() => {
+    // Fetch razorpay key from backend if not defined in env
+    fetch(`${API_URL}/api/config`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data && data.razorpay_key_id) {
+          setRazorpayKey(data.razorpay_key_id);
+        }
+      })
+      .catch((err) => console.warn("Could not fetch razorpay config:", err));
+  }, []);
+
   const loadRazorpay = () => new Promise((resolve) => {
     if (window.Razorpay) return resolve(true);
     const script = document.createElement('script');
@@ -68,68 +82,93 @@ export default function App() {
   });
 
   const handleSimulate = async (scenario) => {
-    const isLoaded = await loadRazorpay();
-    if (!isLoaded) {
-      alert("Razorpay SDK failed to load");
-      return;
+    let keyToUse = razorpayKey || import.meta.env.VITE_RAZORPAY_KEY_ID;
+    if (!keyToUse) {
+      try {
+        const res = await fetch(`${API_URL}/api/config`);
+        const data = await res.json();
+        keyToUse = data.razorpay_key_id;
+        if (keyToUse) setRazorpayKey(keyToUse);
+      } catch (e) {
+        console.error(e);
+      }
     }
 
-    const options = {
-      key: "rzp_test_xxxxxx", 
-      amount: scenario === 'drop' ? "249900" : "99900",
-      currency: "INR",
-      name: "PayLoop Demo Store",
-      description: scenario === 'drop' ? "Demo Premium Plan" : "Demo Product",
-      prefill: {
-        name: scenario === 'drop' ? "Demo User (Dropped)" : "Demo User (Abandoned)",
-        email: scenario === 'drop' ? "demo_drop@example.com" : "demo_fail@example.com",
-        contact: scenario === 'drop' ? "8888888888" : "9999999999"
-      },
-      handler: async function (response) {
-        if (scenario === 'drop') {
-          try {
-            await fetch(`${API_URL}/api/simulate/webhook-drop`, {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ razorpay_payment_id: response.razorpay_payment_id })
-            });
-          } catch(e) {
-            console.error(e);
-          }
-        }
-      },
-      modal: {
-        ondismiss: async function() {
-          if (scenario === 'fail') {
+    try {
+      const isLoaded = await loadRazorpay();
+      if (!isLoaded || !keyToUse || keyToUse.includes("xxxxx")) {
+        throw new Error("Razorpay SDK unavailable or invalid key");
+      }
+
+      const options = {
+        key: keyToUse, 
+        amount: scenario === 'drop' ? "249900" : "99900",
+        currency: "INR",
+        name: "PayLoop Demo Store",
+        description: scenario === 'drop' ? "Demo Premium Plan" : "Demo Product",
+        prefill: {
+          name: scenario === 'drop' ? "Demo User (Dropped)" : "Demo User (Abandoned)",
+          email: scenario === 'drop' ? "demo_drop@example.com" : "demo_fail@example.com",
+          contact: scenario === 'drop' ? "8888888888" : "9999999999"
+        },
+        handler: async function (response) {
+          if (scenario === 'drop') {
             try {
-              await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
+              await fetch(`${API_URL}/api/simulate/webhook-drop`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ reason: 'Customer closed checkout modal' })
+                body: JSON.stringify({ razorpay_payment_id: response.razorpay_payment_id })
               });
             } catch(e) {
               console.error(e);
             }
           }
+        },
+        modal: {
+          ondismiss: async function() {
+            if (scenario === 'fail') {
+              try {
+                await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ reason: 'Customer closed checkout modal' })
+                });
+              } catch(e) {
+                console.error(e);
+              }
+            }
+          }
         }
+      };
+
+      const rzp = new window.Razorpay(options);
+      
+      rzp.on('payment.failed', async function (response) {
+         if (scenario === 'fail') {
+            try {
+              await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
+                 method: 'POST',
+                 headers: { 'Content-Type': 'application/json' },
+                 body: JSON.stringify({ reason: response.error?.description || 'Payment failed', razorpay_payment_id: response.error?.metadata?.payment_id })
+              });
+            } catch(e) {}
+         }
+      });
+
+      rzp.open();
+    } catch (err) {
+      console.warn("Direct checkout unavailable, triggering simulation backend directly:", err);
+      const endpoint = scenario === 'drop' ? '/api/simulate/webhook-drop' : '/api/simulate/legitimate-failure';
+      try {
+        await fetch(`${API_URL}${endpoint}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: 'Simulated checkout event' })
+        });
+      } catch (e) {
+        console.error("Simulation fallback failed:", e);
       }
-    };
-
-    const rzp = new window.Razorpay(options);
-    
-    rzp.on('payment.failed', async function (response) {
-       if (scenario === 'fail') {
-          try {
-            await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
-               method: 'POST',
-               headers: { 'Content-Type': 'application/json' },
-               body: JSON.stringify({ reason: response.error.description, razorpay_payment_id: response.error.metadata.payment_id })
-            });
-          } catch(e) {}
-       }
-    });
-
-    rzp.open();
+    }
   };
 
   const stats = useMemo(() => {

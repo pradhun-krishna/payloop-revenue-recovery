@@ -149,6 +149,15 @@ async def get_status():
     }
 
 
+@app.get("/api/config")
+async def get_config():
+    """Return public config for client checkout."""
+    from razorpay_client import RAZORPAY_KEY_ID
+    return {
+        "razorpay_key_id": RAZORPAY_KEY_ID or os.getenv("RAZORPAY_KEY_ID", "")
+    }
+
+
 @app.post("/api/run-agent")
 async def start_agent(background_tasks: BackgroundTasks):
     """
