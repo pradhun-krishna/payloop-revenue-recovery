@@ -7,6 +7,7 @@ REST endpoints + WebSocket for real-time agent feed.
 import os
 import json
 import asyncio
+from datetime import datetime, timezone
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect, BackgroundTasks
@@ -81,7 +82,7 @@ app = FastAPI(
 )
 
 import os
-FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
 
 # CORS — strict origin matching
 app.add_middleware(
@@ -207,6 +208,92 @@ async def reset_agent():
 # ---------------------------------------------------------------------------
 # PayLoop Endpoints (Layer 1 & 2)
 # ---------------------------------------------------------------------------
+
+@app.post("/api/simulate/legitimate-failure")
+async def simulate_legitimate_failure():
+    """Simulate transaction 201 - User Abandonment"""
+    transactions = _load_transactions()
+    new_txn = {
+        "transaction_id": f"pay_sim_{len(transactions) + 1}_fail",
+        "amount": 99900,
+        "payment_method": "upi",
+        "customer_name": "Demo User (Abandoned)",
+        "customer_email": "demo_fail@example.com",
+        "customer_phone": "9999999999",
+        "status": "failed",
+        "failure_reason": "Customer cancelled checkout",
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "product": "Demo Product"
+    }
+    transactions.append(new_txn)
+    with open(DATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(transactions, f, indent=2)
+        
+    from classifier import classify
+    from decision_engine import get_recovery_action
+    import audit_logger
+    
+    failure_class, classifier_stage = classify(new_txn)
+    action = get_recovery_action(failure_class)
+    
+    log_entry = audit_logger.build_audit_entry(
+        txn=new_txn,
+        failure_class=failure_class,
+        action=action,
+        action_result="failed",
+        classifier_stage=classifier_stage,
+        api_endpoint=None,
+        mock_mode=True,
+        anomaly_flagged=False,
+        reason=action.get("description", "")
+    )
+    
+    agent_state["total"] = len(transactions)
+    agent_state["processed"] = agent_state.get("processed", 0) + 1
+    
+    await manager.broadcast({
+        "type": "TXN_PROCESSED",
+        "data": {
+            **log_entry,
+            "amount_inr": 999.00,
+            "payment_method": new_txn["payment_method"],
+            "customer_name": new_txn["customer_name"],
+            "failure_reason": new_txn["failure_reason"],
+            "z_score": 0.0
+        },
+    })
+    
+    return {"status": "simulated", "transaction": new_txn}
+
+@app.post("/api/simulate/webhook-drop")
+async def simulate_webhook_drop():
+    """Simulate transaction 202 - Successful Payment but Webhook Dropped"""
+    transactions = _load_transactions()
+    new_txn = {
+        "transaction_id": f"pay_sim_{len(transactions) + 1}_drop",
+        "amount": 249900,
+        "payment_method": "card",
+        "customer_name": "Demo User (Dropped)",
+        "customer_email": "demo_drop@example.com",
+        "customer_phone": "8888888888",
+        "status": "captured",
+        "failure_reason": None,
+        "created_at": datetime.now(timezone.utc).isoformat(),
+        "product": "Demo Premium Plan"
+    }
+    transactions.append(new_txn)
+    with open(DATA_PATH, "w", encoding="utf-8") as f:
+        json.dump(transactions, f, indent=2)
+        
+    agent_state["total"] = len(transactions)
+    
+    # Broadcast a system message so the UI knows something happened
+    await manager.broadcast({
+        "type": "SYSTEM_MESSAGE", 
+        "message": "Webhook drop simulated! Run Webhook Guardian to recover."
+    })
+        
+    return {"status": "simulated", "transaction": new_txn}
 
 @app.post("/api/run-guardian")
 async def run_guardian():

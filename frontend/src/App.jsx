@@ -14,6 +14,7 @@ import WebhookGuardianTab from './components/WebhookGuardianTab';
 import SettlementReconcilerTab from './components/SettlementReconcilerTab';
 import CopilotWidget from './components/CopilotWidget';
 import RevenueChart from './components/RevenueChart';
+import { API_URL } from './config';
 
 export default function App() {
   const { messages, lastMessage, isConnected, clearMessages } = useWebSocket();
@@ -101,6 +102,31 @@ export default function App() {
             </div>
 
             <div className="flex items-center gap-[8px]">
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch(`${API_URL}/api/simulate/legitimate-failure`, { method: 'POST' });
+                  } catch (e) {
+                    console.error("Simulation failed", e);
+                  }
+                }}
+                className="px-12 py-[6px] rounded-tag text-[12px] font-medium bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-colors duration-150"
+              >
+                Simulate 201 (Legit Fail)
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await fetch(`${API_URL}/api/simulate/webhook-drop`, { method: 'POST' });
+                    // alert('Webhook drop simulated! Switch to Webhook Guardian tab to recover it.');
+                  } catch (e) {
+                    console.error("Simulation failed", e);
+                  }
+                }}
+                className="px-12 py-[6px] rounded-tag text-[12px] font-medium bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500/20 transition-colors duration-150"
+              >
+                Simulate 202 (Webhook Drop)
+              </button>
               {(isIdle || batchStatus.status === 'complete' || batchStatus.status === 'halted') && (
                 <button
                   onClick={handleStartAgent}
