@@ -27,12 +27,15 @@ export default function GuardianFeed({ events }) {
               </tr>
             )}
             {events.map((ev, i) => (
-              <tr key={i} className="border-b border-border/30 hover:bg-bg-elevated/30 transition-colors">
+              <tr key={i} className={`border-b transition-colors ${ev.is_demo_simulation ? 'border-accent/50 bg-accent/10 shadow-[inset_0_0_12px_rgba(var(--color-accent),0.2)]' : 'border-border/30 hover:bg-bg-elevated/30'}`}>
                 <td className="py-[10px] px-16 font-mono text-[11px]">
                   {new Date(ev.timestamp).toLocaleTimeString('en-IN', { hour12: false })}
                 </td>
                 <td className="py-[10px] px-16 font-mono text-[11px] text-text-tertiary">
                   {ev.payment_id}
+                  {ev.is_demo_simulation && (
+                    <span className="ml-8 text-[10px] text-accent bg-accent/20 px-[6px] py-[2px] rounded-tag">SIMULATED</span>
+                  )}
                 </td>
                 <td className="py-[10px] px-16 text-accent font-medium">
                   {ev.order_id}

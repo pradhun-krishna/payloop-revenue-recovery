@@ -28,7 +28,8 @@ def create_order_from_payment(payment: dict) -> dict:
         "product": random.choice(PRODUCTS),
         "quantity": random.randint(1, 3),
         "webhook_received": False,
-        "guardian_recovered": True
+        "guardian_recovered": True,
+        "is_demo_simulation": payment.get("is_demo_simulation", False)
     }
 
 def _initialize_order_store() -> dict:

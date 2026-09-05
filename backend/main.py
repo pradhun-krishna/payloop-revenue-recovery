@@ -209,21 +209,31 @@ async def reset_agent():
 # PayLoop Endpoints (Layer 1 & 2)
 # ---------------------------------------------------------------------------
 
+from pydantic import BaseModel
+from typing import Optional
+
+class SimulationPayload(BaseModel):
+    razorpay_payment_id: Optional[str] = None
+    reason: Optional[str] = None
+
 @app.post("/api/simulate/legitimate-failure")
-async def simulate_legitimate_failure():
+async def simulate_legitimate_failure(payload: SimulationPayload = None):
     """Simulate transaction 201 - User Abandonment"""
     transactions = _load_transactions()
+    pid = payload.razorpay_payment_id if payload and payload.razorpay_payment_id else f"pay_sim_{len(transactions) + 1}_fail"
+    reason = payload.reason if payload and payload.reason else "Customer cancelled checkout"
     new_txn = {
-        "transaction_id": f"pay_sim_{len(transactions) + 1}_fail",
+        "transaction_id": pid,
         "amount": 99900,
         "payment_method": "upi",
         "customer_name": "Demo User (Abandoned)",
         "customer_email": "demo_fail@example.com",
         "customer_phone": "9999999999",
         "status": "failed",
-        "failure_reason": "Customer cancelled checkout",
+        "failure_reason": reason,
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "product": "Demo Product"
+        "product": "Demo Product",
+        "is_demo_simulation": True
     }
     transactions.append(new_txn)
     with open(DATA_PATH, "w", encoding="utf-8") as f:
@@ -259,18 +269,20 @@ async def simulate_legitimate_failure():
             "payment_method": new_txn["payment_method"],
             "customer_name": new_txn["customer_name"],
             "failure_reason": new_txn["failure_reason"],
-            "z_score": 0.0
+            "z_score": 0.0,
+            "is_demo_simulation": True
         },
     })
     
     return {"status": "simulated", "transaction": new_txn}
 
 @app.post("/api/simulate/webhook-drop")
-async def simulate_webhook_drop():
+async def simulate_webhook_drop(payload: SimulationPayload = None):
     """Simulate transaction 202 - Successful Payment but Webhook Dropped"""
     transactions = _load_transactions()
+    pid = payload.razorpay_payment_id if payload and payload.razorpay_payment_id else f"pay_sim_{len(transactions) + 1}_drop"
     new_txn = {
-        "transaction_id": f"pay_sim_{len(transactions) + 1}_drop",
+        "transaction_id": pid,
         "amount": 249900,
         "payment_method": "card",
         "customer_name": "Demo User (Dropped)",
@@ -279,7 +291,8 @@ async def simulate_webhook_drop():
         "status": "captured",
         "failure_reason": None,
         "created_at": datetime.now(timezone.utc).isoformat(),
-        "product": "Demo Premium Plan"
+        "product": "Demo Premium Plan",
+        "is_demo_simulation": True
     }
     transactions.append(new_txn)
     with open(DATA_PATH, "w", encoding="utf-8") as f:

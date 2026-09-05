@@ -29,7 +29,8 @@ export default function WebhookGuardianTab({ lastMessage }) {
         amount_inr: order.amount_inr,
         customer_name: order.customer_name,
         product: order.product,
-        timestamp: order.created_at
+        timestamp: order.created_at,
+        is_demo_simulation: order.is_demo_simulation
       }));
       setFeed(simulatedFeed);
     } catch (err) {

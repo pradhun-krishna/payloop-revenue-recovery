@@ -86,9 +86,9 @@ function TransactionRow({ txn, index }) {
 
   return (
     <tr
-      className="border-b border-border/40 transition-all duration-150 ease-out"
+      className={`border-b transition-all duration-150 ease-out ${txn.is_demo_simulation ? 'border-accent/50 bg-accent/10 shadow-[inset_0_0_12px_rgba(var(--color-accent),0.2)]' : 'border-border/40'}`}
       style={{
-        backgroundColor: index % 2 === 0 ? '#1A1D27' : '#1D2035',
+        backgroundColor: txn.is_demo_simulation ? undefined : (index % 2 === 0 ? '#1A1D27' : '#1D2035'),
         animation: 'slideIn 150ms ease-out',
       }}
     >
@@ -103,6 +103,9 @@ function TransactionRow({ txn, index }) {
       {/* Transaction ID */}
       <td className="py-[8px] px-[12px] font-mono text-[12px] text-text-secondary">
         {txn.transaction_id ? txn.transaction_id.slice(0, 16) + '...' : '—'}
+        {txn.is_demo_simulation && (
+          <span className="ml-8 text-[10px] text-accent bg-accent/20 px-[6px] py-[2px] rounded-tag">SIMULATED</span>
+        )}
       </td>
 
       {/* Amount */}

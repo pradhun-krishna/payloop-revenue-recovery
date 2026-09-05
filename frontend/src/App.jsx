@@ -58,6 +58,80 @@ export default function App() {
     await batchStatus.resetAgent();
   }, [batchStatus, clearMessages]);
 
+  const loadRazorpay = () => new Promise((resolve) => {
+    if (window.Razorpay) return resolve(true);
+    const script = document.createElement('script');
+    script.src = 'https://checkout.razorpay.com/v1/checkout.js';
+    script.onload = () => resolve(true);
+    script.onerror = () => resolve(false);
+    document.body.appendChild(script);
+  });
+
+  const handleSimulate = async (scenario) => {
+    const isLoaded = await loadRazorpay();
+    if (!isLoaded) {
+      alert("Razorpay SDK failed to load");
+      return;
+    }
+
+    const options = {
+      key: "rzp_test_xxxxxx", 
+      amount: scenario === 'drop' ? "249900" : "99900",
+      currency: "INR",
+      name: "PayLoop Demo Store",
+      description: scenario === 'drop' ? "Demo Premium Plan" : "Demo Product",
+      prefill: {
+        name: scenario === 'drop' ? "Demo User (Dropped)" : "Demo User (Abandoned)",
+        email: scenario === 'drop' ? "demo_drop@example.com" : "demo_fail@example.com",
+        contact: scenario === 'drop' ? "8888888888" : "9999999999"
+      },
+      handler: async function (response) {
+        if (scenario === 'drop') {
+          try {
+            await fetch(`${API_URL}/api/simulate/webhook-drop`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ razorpay_payment_id: response.razorpay_payment_id })
+            });
+          } catch(e) {
+            console.error(e);
+          }
+        }
+      },
+      modal: {
+        ondismiss: async function() {
+          if (scenario === 'fail') {
+            try {
+              await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ reason: 'Customer closed checkout modal' })
+              });
+            } catch(e) {
+              console.error(e);
+            }
+          }
+        }
+      }
+    };
+
+    const rzp = new window.Razorpay(options);
+    
+    rzp.on('payment.failed', async function (response) {
+       if (scenario === 'fail') {
+          try {
+            await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
+               method: 'POST',
+               headers: { 'Content-Type': 'application/json' },
+               body: JSON.stringify({ reason: response.error.description, razorpay_payment_id: response.error.metadata.payment_id })
+            });
+          } catch(e) {}
+       }
+    });
+
+    rzp.open();
+  };
+
   const stats = useMemo(() => {
     const recovered = processedTxns.filter((t) => t.action_result === 'success').length;
     const flagged = processedTxns.filter((t) => t.anomaly_flagged).length;
@@ -103,26 +177,13 @@ export default function App() {
 
             <div className="flex items-center gap-[8px]">
               <button
-                onClick={async () => {
-                  try {
-                    await fetch(`${API_URL}/api/simulate/legitimate-failure`, { method: 'POST' });
-                  } catch (e) {
-                    console.error("Simulation failed", e);
-                  }
-                }}
+                onClick={() => handleSimulate('fail')}
                 className="px-12 py-[6px] rounded-tag text-[12px] font-medium bg-red-500/10 text-red-500 border border-red-500/20 hover:bg-red-500/20 transition-colors duration-150"
               >
                 Simulate 201 (Legit Fail)
               </button>
               <button
-                onClick={async () => {
-                  try {
-                    await fetch(`${API_URL}/api/simulate/webhook-drop`, { method: 'POST' });
-                    // alert('Webhook drop simulated! Switch to Webhook Guardian tab to recover it.');
-                  } catch (e) {
-                    console.error("Simulation failed", e);
-                  }
-                }}
+                onClick={() => handleSimulate('drop')}
                 className="px-12 py-[6px] rounded-tag text-[12px] font-medium bg-orange-500/10 text-orange-500 border border-orange-500/20 hover:bg-orange-500/20 transition-colors duration-150"
               >
                 Simulate 202 (Webhook Drop)

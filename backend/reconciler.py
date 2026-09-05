@@ -97,7 +97,8 @@ async def run_reconciliation(settlements: list, payments: list, orders: dict) ->
                 "payment_id": p["transaction_id"],
                 "order_id": order["order_id"] if order else None,
                 "amount_inr": amount,
-                "product": order["product"] if order else "Unknown"
+                "product": order["product"] if order else "Unknown",
+                "is_demo_simulation": p.get("is_demo_simulation", False)
             })
             gaps.append({
                 "gap_id": f"GAP_{gap_counter:03d}",
@@ -108,7 +109,8 @@ async def run_reconciliation(settlements: list, payments: list, orders: dict) ->
                 "payment_id": p["transaction_id"],
                 "order_id": order["order_id"] if order else None,
                 "plain_english": None,
-                "suggested_action": "Expected in next T+2 or T+3 settlement cycle"
+                "suggested_action": "Expected in next T+2 or T+3 settlement cycle",
+                "is_demo_simulation": p.get("is_demo_simulation", False)
             })
             gap_counter += 1
 

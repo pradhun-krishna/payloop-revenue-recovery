@@ -156,10 +156,10 @@ function LogEntry({ message }) {
   }
 
   return (
-    <>
+    <div className={d.is_demo_simulation ? "bg-accent/10 border-l-[2px] border-accent pl-[8px] my-[4px] py-[2px]" : ""}>
       {classLine}
       {apiLine}
-    </>
+    </div>
   );
 }
 

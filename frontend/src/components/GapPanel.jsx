@@ -45,7 +45,10 @@ function GapCard({ gap }) {
   };
 
   return (
-    <div className={`bg-bg-elevated border ${getBorderColor(gap.severity)} rounded p-12`}>
+    <div className={`border ${gap.is_demo_simulation ? 'border-accent bg-accent/10 shadow-[inset_0_0_12px_rgba(var(--color-accent),0.2)]' : `bg-bg-elevated ${getBorderColor(gap.severity)}`} rounded p-12 relative`}>
+      {gap.is_demo_simulation && (
+        <span className="absolute top-12 right-12 text-[10px] text-accent bg-accent/20 px-[6px] py-[2px] rounded-tag">SIMULATED</span>
+      )}
       <div className="flex items-start justify-between mb-[8px]">
         <div className="flex items-center gap-[6px]">
           <span className={`w-[6px] h-[6px] rounded-full ${getDotColor(gap.severity)}`} />

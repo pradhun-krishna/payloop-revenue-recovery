@@ -51,7 +51,8 @@ async def run_webhook_check(payments: list, broadcaster=None) -> dict:
                         "product": new_order["product"],
                         "customer_name": new_order["customer_name"],
                         "action": "Order auto-created by Guardian",
-                        "timestamp": datetime.now(timezone.utc).isoformat()
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "is_demo_simulation": new_order.get("is_demo_simulation", False)
                     }
                 })
         
