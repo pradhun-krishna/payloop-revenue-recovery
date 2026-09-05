@@ -79,6 +79,10 @@ RULE_MAP: dict[str, str] = {
     # Insufficient funds (customer)
     "INSUFFICIENT_FUNDS": "INSUFFICIENT_FUNDS_USER",
     "INSUFFICIENT_FUNDS_USER": "INSUFFICIENT_FUNDS_USER",
+    # User Abandonment / Checkout Dismissal
+    "USER_ABANDONED": "USER_ABANDONED",
+    "CUSTOMER_DROPOFF": "USER_ABANDONED",
+    "CHECKOUT_DISMISSED": "USER_ABANDONED",
 }
 
 

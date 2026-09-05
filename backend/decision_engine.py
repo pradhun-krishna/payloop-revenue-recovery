@@ -55,6 +55,12 @@ RECOVERY_ACTIONS: dict[str, dict] = {
         "retry_after_minutes": None,
         "api_call": None,
     },
+    "USER_ABANDONED": {
+        "action": "SEND_RECOVERY_EMAIL",
+        "description": "Trigger AI Copilot to draft and send tailored cart recovery email with 1-click retry link",
+        "retry_after_minutes": None,
+        "api_call": "POST /payment_links/abandoned_cart",
+    },
 }
 
 # Fallback for any unrecognized failure class

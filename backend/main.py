@@ -230,7 +230,7 @@ async def simulate_legitimate_failure(payload: SimulationPayload = None):
     """Simulate transaction 201 - User Abandonment"""
     transactions = _load_transactions()
     pid = payload.razorpay_payment_id if payload and payload.razorpay_payment_id else f"pay_sim_{len(transactions) + 1}_fail"
-    reason = payload.reason if payload and payload.reason else "Customer cancelled checkout"
+    reason = payload.reason if payload and payload.reason else "Customer abandoned checkout at payment gateway"
     new_txn = {
         "transaction_id": pid,
         "amount": 99900,
@@ -239,6 +239,7 @@ async def simulate_legitimate_failure(payload: SimulationPayload = None):
         "customer_email": "demo_fail@example.com",
         "customer_phone": "9999999999",
         "status": "failed",
+        "failure_code": "USER_ABANDONED",
         "failure_reason": reason,
         "created_at": datetime.now(timezone.utc).isoformat(),
         "product": "Demo Product",
@@ -250,7 +251,6 @@ async def simulate_legitimate_failure(payload: SimulationPayload = None):
         
     from classifier import classify
     from decision_engine import get_recovery_action
-    import audit_logger
     
     failure_class, classifier_stage = classify(new_txn)
     action = get_recovery_action(failure_class)
@@ -270,6 +270,7 @@ async def simulate_legitimate_failure(payload: SimulationPayload = None):
     agent_state["total"] = len(transactions)
     agent_state["processed"] = agent_state.get("processed", 0) + 1
     
+    # Broadcast to live UI via WebSocket
     await manager.broadcast({
         "type": "TXN_PROCESSED",
         "data": {
@@ -298,7 +299,8 @@ async def simulate_webhook_drop(payload: SimulationPayload = None):
         "customer_email": "demo_drop@example.com",
         "customer_phone": "8888888888",
         "status": "captured",
-        "failure_reason": None,
+        "failure_reason": "Missing Merchant Order (Webhook Dropped)",
+        "failure_code": "WEBHOOK_DROPPED",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "product": "Demo Premium Plan",
         "is_demo_simulation": True
@@ -307,9 +309,36 @@ async def simulate_webhook_drop(payload: SimulationPayload = None):
     with open(DATA_PATH, "w", encoding="utf-8") as f:
         json.dump(transactions, f, indent=2)
         
-    agent_state["total"] = len(transactions)
+    import audit_logger
+    log_entry = audit_logger.build_audit_entry(
+        txn=new_txn,
+        failure_class="WEBHOOK_DROPPED",
+        action={"action": "REPLAY_WEBHOOK", "description": "Captured on Razorpay, order absent in merchant DB. Replay needed."},
+        action_result="pending",
+        classifier_stage="ledger_audit",
+        api_endpoint="/api/run-guardian",
+        mock_mode=True,
+        anomaly_flagged=True,
+        reason="Captured on Razorpay, order absent in merchant DB"
+    )
     
-    # Broadcast a system message so the UI knows something happened
+    agent_state["total"] = len(transactions)
+    agent_state["processed"] = agent_state.get("processed", 0) + 1
+    
+    # Broadcast to live UI via WebSocket so feed and activity log show #202
+    await manager.broadcast({
+        "type": "TXN_PROCESSED",
+        "data": {
+            **log_entry,
+            "amount_inr": 2499.00,
+            "payment_method": new_txn["payment_method"],
+            "customer_name": new_txn["customer_name"],
+            "failure_reason": new_txn["failure_reason"],
+            "z_score": 2.5,
+            "is_demo_simulation": True
+        },
+    })
+    
     await manager.broadcast({
         "type": "SYSTEM_MESSAGE", 
         "message": "Webhook drop simulated! Run Webhook Guardian to recover."

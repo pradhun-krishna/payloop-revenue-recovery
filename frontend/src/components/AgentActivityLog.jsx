@@ -109,7 +109,7 @@ function LogEntry({ message }) {
     );
   }
 
-  if (message.type !== 'TXN_PROCESSED') return null;
+  if (message.type !== 'TXN_PROCESSED' && message.type !== 'TRANSACTION_PROCESSED') return null;
 
   const d = message.data;
   if (!d) return null;

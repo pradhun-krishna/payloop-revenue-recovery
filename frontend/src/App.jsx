@@ -29,7 +29,7 @@ export default function App() {
   useEffect(() => {
     if (!lastMessage) return;
 
-    if (lastMessage.type === 'TXN_PROCESSED' && lastMessage.data) {
+    if ((lastMessage.type === 'TXN_PROCESSED' || lastMessage.type === 'TRANSACTION_PROCESSED') && lastMessage.data) {
       setProcessedTxns((prev) => [...prev, lastMessage.data]);
     }
 
@@ -94,6 +94,36 @@ export default function App() {
       }
     }
 
+    let isTriggered = false;
+
+    const triggerDrop = async (paymentId = null) => {
+      if (isTriggered) return;
+      isTriggered = true;
+      try {
+        await fetch(`${API_URL}/api/simulate/webhook-drop`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ razorpay_payment_id: paymentId })
+        });
+      } catch(e) {
+        console.error(e);
+      }
+    };
+
+    const triggerFail = async (reason = 'Customer closed checkout modal', paymentId = null) => {
+      if (isTriggered) return;
+      isTriggered = true;
+      try {
+        await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ reason: reason, razorpay_payment_id: paymentId })
+        });
+      } catch(e) {
+        console.error(e);
+      }
+    };
+
     try {
       const isLoaded = await loadRazorpay();
       if (!isLoaded || !keyToUse || keyToUse.includes("xxxxx")) {
@@ -113,29 +143,17 @@ export default function App() {
         },
         handler: async function (response) {
           if (scenario === 'drop') {
-            try {
-              await fetch(`${API_URL}/api/simulate/webhook-drop`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ razorpay_payment_id: response.razorpay_payment_id })
-              });
-            } catch(e) {
-              console.error(e);
-            }
+            await triggerDrop(response.razorpay_payment_id);
           }
         },
         modal: {
           ondismiss: async function() {
             if (scenario === 'fail') {
-              try {
-                await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({ reason: 'Customer closed checkout modal' })
-                });
-              } catch(e) {
-                console.error(e);
-              }
+              await triggerFail('Customer closed checkout modal');
+            } else if (scenario === 'drop') {
+              // If user closes modal during drop scenario without completing test payment,
+              // simulate the captured-on-gateway drop!
+              await triggerDrop();
             }
           }
         }
@@ -145,28 +163,17 @@ export default function App() {
       
       rzp.on('payment.failed', async function (response) {
          if (scenario === 'fail') {
-            try {
-              await fetch(`${API_URL}/api/simulate/legitimate-failure`, {
-                 method: 'POST',
-                 headers: { 'Content-Type': 'application/json' },
-                 body: JSON.stringify({ reason: response.error?.description || 'Payment failed', razorpay_payment_id: response.error?.metadata?.payment_id })
-              });
-            } catch(e) {}
+            await triggerFail(response.error?.description || 'Payment failed at bank gateway', response.error?.metadata?.payment_id);
          }
       });
 
       rzp.open();
     } catch (err) {
       console.warn("Direct checkout unavailable, triggering simulation backend directly:", err);
-      const endpoint = scenario === 'drop' ? '/api/simulate/webhook-drop' : '/api/simulate/legitimate-failure';
-      try {
-        await fetch(`${API_URL}${endpoint}`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: 'Simulated checkout event' })
-        });
-      } catch (e) {
-        console.error("Simulation fallback failed:", e);
+      if (scenario === 'drop') {
+        await triggerDrop();
+      } else {
+        await triggerFail('Simulated checkout event');
       }
     }
   };
