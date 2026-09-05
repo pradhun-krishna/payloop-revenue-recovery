@@ -121,27 +121,30 @@ export default function ExceptionPanel({ transactions }) {
       </div>
 
       {draftData && (
-        <div className="absolute inset-0 bg-bg/80 backdrop-blur-sm flex items-center justify-center p-16 z-10">
-          <div className="bg-bg-surface border border-border rounded-lg shadow-xl w-full flex flex-col max-h-full">
-            <div className="px-16 py-12 border-b border-border flex justify-between items-center bg-accent text-white rounded-t-lg">
-              <span className="text-[13px] font-medium flex items-center gap-[6px]">
-                <span className="text-[10px] bg-white/20 px-[4px] py-[2px] rounded">AI</span>
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm flex items-center justify-center p-20 z-50">
+          <div className="bg-bg-surface border border-border rounded-xl shadow-2xl w-full max-w-xl flex flex-col max-h-[90vh]">
+            <div className="px-20 py-16 border-b border-border flex justify-between items-center bg-accent text-white rounded-t-xl">
+              <span className="text-[14px] font-semibold flex items-center gap-[8px]">
+                <span className="text-[10px] bg-white/20 px-[6px] py-[2px] rounded font-bold uppercase tracking-wider">AI Copilot</span>
                 Draft Recovery Email
               </span>
-              <button onClick={() => setDraftData(null)} className="text-white/80 hover:text-white">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+              <button onClick={() => setDraftData(null)} className="text-white/80 hover:text-white p-[4px] transition-colors">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
               </button>
             </div>
-            <div className="p-16 overflow-y-auto flex-1">
-              <div className="text-[11px] text-text-tertiary mb-[8px]">TO: {draftData.txn.customer_name || 'Customer'}</div>
+            <div className="p-20 overflow-y-auto flex-1 space-y-12">
+              <div className="flex items-center justify-between text-[12px] bg-bg-elevated px-12 py-[8px] rounded border border-border/50">
+                <span className="text-text-tertiary">RECIPIENT:</span>
+                <span className="font-mono text-text-primary font-medium">{draftData.txn.customer_email || 'customer@example.com'} ({draftData.txn.customer_name || 'Customer'})</span>
+              </div>
               <textarea 
-                className="w-full h-[180px] bg-bg-elevated border border-border rounded p-12 text-[13px] text-text-primary focus:outline-none focus:border-accent resize-none"
+                className="w-full h-[240px] bg-bg-elevated border border-border rounded-lg p-16 text-[13px] text-text-primary focus:outline-none focus:border-accent leading-relaxed resize-none font-sans"
                 defaultValue={draftData.draft}
               />
             </div>
-            <div className="p-12 border-t border-border flex justify-end gap-[8px]">
-              <button onClick={() => setDraftData(null)} className="px-12 py-[6px] text-[12px] text-text-secondary hover:text-text-primary">Cancel</button>
-              <button onClick={() => setDraftData(null)} className="px-12 py-[6px] text-[12px] bg-accent text-white rounded hover:bg-accent/90">Send Email</button>
+            <div className="px-20 py-14 border-t border-border flex justify-end gap-12 bg-bg/50 rounded-b-xl">
+              <button onClick={() => setDraftData(null)} className="px-16 py-[8px] text-[13px] text-text-secondary hover:text-text-primary transition-colors">Cancel</button>
+              <button onClick={() => setDraftData(null)} className="px-18 py-[8px] text-[13px] font-medium bg-accent text-white rounded-lg hover:bg-accent/90 shadow-md transition-all">Send Recovery Email</button>
             </div>
           </div>
         </div>
