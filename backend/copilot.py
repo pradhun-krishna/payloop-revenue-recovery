@@ -7,11 +7,27 @@ load_dotenv()
 def get_gemini_key():
     return os.getenv("GEMINI_API_KEY", "")
 
+def _get_amount_inr(transaction: dict) -> float:
+    if "amount_inr" in transaction and transaction["amount_inr"]:
+        try:
+            return float(transaction["amount_inr"])
+        except (ValueError, TypeError):
+            pass
+    if "amount" in transaction and transaction["amount"]:
+        try:
+            return float(transaction["amount"]) / 100
+        except (ValueError, TypeError):
+            pass
+    return 999.00
+
+def _get_product(transaction: dict) -> str:
+    return transaction.get("product") or "Demo Product"
+
 def _fallback_recovery_email(transaction: dict) -> str:
-    name = transaction.get('customer_name', 'there')
-    product = transaction.get('product', 'selected items')
-    amount = transaction.get('amount', 0) / 100
-    pid = transaction.get('transaction_id', 'pay_retry_link')
+    name = transaction.get('customer_name') or 'Customer'
+    product = _get_product(transaction)
+    amount = _get_amount_inr(transaction)
+    pid = transaction.get('transaction_id') or 'pay_retry_link'
     
     return (
         f"Subject: Quick update on your order for {product}\n\n"
@@ -86,9 +102,9 @@ You are an expert D2C customer success manager. A customer's payment just failed
 Draft a short, empathetic email to recover this sale. 
 It should sound human, not robotic.
 
-Customer Name: {transaction.get('customer_name', 'Customer')}
-Failed Product: {transaction.get('product', 'your item')}
-Cart Value: ₹{transaction.get('amount', 0) / 100}
+Customer Name: {transaction.get('customer_name') or 'Customer'}
+Failed Product: {_get_product(transaction)}
+Cart Value: ₹{_get_amount_inr(transaction):,.2f}
 Failure Reason: {transaction.get('failure_class', 'payment failure')}
 Agent Action Taken: {transaction.get('action_result', 'flagged for review')}
 

@@ -275,9 +275,12 @@ async def simulate_legitimate_failure(payload: SimulationPayload = None):
         "type": "TXN_PROCESSED",
         "data": {
             **log_entry,
+            "amount": new_txn["amount"],
             "amount_inr": 999.00,
+            "product": new_txn["product"],
             "payment_method": new_txn["payment_method"],
             "customer_name": new_txn["customer_name"],
+            "customer_email": new_txn["customer_email"],
             "failure_reason": new_txn["failure_reason"],
             "z_score": 0.0,
             "is_demo_simulation": True
@@ -330,9 +333,12 @@ async def simulate_webhook_drop(payload: SimulationPayload = None):
         "type": "TXN_PROCESSED",
         "data": {
             **log_entry,
+            "amount": new_txn["amount"],
             "amount_inr": 2499.00,
+            "product": new_txn["product"],
             "payment_method": new_txn["payment_method"],
             "customer_name": new_txn["customer_name"],
+            "customer_email": new_txn["customer_email"],
             "failure_reason": new_txn["failure_reason"],
             "z_score": 2.5,
             "is_demo_simulation": True
