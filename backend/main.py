@@ -301,9 +301,9 @@ async def simulate_webhook_drop(payload: SimulationPayload = None):
         "customer_name": "Demo User (Dropped)",
         "customer_email": "demo_drop@example.com",
         "customer_phone": "8888888888",
-        "status": "captured",
-        "failure_reason": "Missing Merchant Order (Webhook Dropped)",
-        "failure_code": "WEBHOOK_DROPPED",
+        "status": "authorized",
+        "failure_reason": "Payment Authorized on Gateway — Uncaptured & Missing Order",
+        "failure_code": "UNCAPTURED_AUTHORIZED",
         "created_at": datetime.now(timezone.utc).isoformat(),
         "product": "Demo Premium Plan",
         "is_demo_simulation": True
@@ -315,14 +315,14 @@ async def simulate_webhook_drop(payload: SimulationPayload = None):
     import audit_logger
     log_entry = audit_logger.build_audit_entry(
         txn=new_txn,
-        failure_class="WEBHOOK_DROPPED",
-        action={"action": "REPLAY_WEBHOOK", "description": "Captured on Razorpay, order absent in merchant DB. Replay needed."},
+        failure_class="UNCAPTURED_AUTHORIZED",
+        action={"action": "CAPTURE_AND_RECOVER", "description": "Payment authorized on Razorpay ledger but uncaptured on merchant side. Run Guardian to execute POST /payments/{id}/capture and create order."},
         action_result="pending",
         classifier_stage="ledger_audit",
-        api_endpoint="/api/run-guardian",
+        api_endpoint="POST /v1/payments/{id}/capture",
         mock_mode=True,
         anomaly_flagged=True,
-        reason="Captured on Razorpay, order absent in merchant DB"
+        reason="Payment authorized on Razorpay ledger but uncaptured on merchant side"
     )
     
     agent_state["total"] = len(transactions)
@@ -340,6 +340,7 @@ async def simulate_webhook_drop(payload: SimulationPayload = None):
             "customer_name": new_txn["customer_name"],
             "customer_email": new_txn["customer_email"],
             "failure_reason": new_txn["failure_reason"],
+            "gateway_status": "authorized",
             "z_score": 2.5,
             "is_demo_simulation": True
         },
@@ -347,7 +348,7 @@ async def simulate_webhook_drop(payload: SimulationPayload = None):
     
     await manager.broadcast({
         "type": "SYSTEM_MESSAGE", 
-        "message": "Webhook drop simulated! Run Webhook Guardian to recover."
+        "message": "Payment authorized on Razorpay! Run Webhook Guardian to execute auto-capture and fulfill order."
     })
         
     return {"status": "simulated", "transaction": new_txn}

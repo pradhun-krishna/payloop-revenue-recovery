@@ -21,6 +21,7 @@ export default function GuardianFeed({ events }) {
               <th className="font-medium py-[8px] px-16">Timestamp</th>
               <th className="font-medium py-[8px] px-16">Payment ID</th>
               <th className="font-medium py-[8px] px-16">Created Order</th>
+              <th className="font-medium py-[8px] px-16">Recovery Action</th>
               <th className="font-medium py-[8px] px-16">Customer</th>
               <th className="font-medium py-[8px] px-16 text-right">Amount</th>
             </tr>
@@ -28,7 +29,7 @@ export default function GuardianFeed({ events }) {
           <tbody className="text-[12px] text-text-secondary">
             {sortedEvents.length === 0 && (
               <tr>
-                <td colSpan="5" className="py-24 text-center text-text-tertiary">
+                <td colSpan="6" className="py-24 text-center text-text-tertiary">
                   No orders recovered yet.
                 </td>
               </tr>
@@ -46,6 +47,17 @@ export default function GuardianFeed({ events }) {
                 </td>
                 <td className="py-[10px] px-16 text-accent font-medium">
                   {ev.order_id}
+                </td>
+                <td className="py-[10px] px-16">
+                  {ev.was_authorized_capture ? (
+                    <span className="inline-flex items-center gap-[4px] text-[11px] font-semibold text-emerald-400 bg-emerald-500/15 border border-emerald-500/30 px-[8px] py-[2px] rounded-tag">
+                      <span>⚡ Auto-Captured (Razorpay API)</span>
+                    </span>
+                  ) : (
+                    <span className="text-[11px] text-text-secondary">
+                      Order auto-created
+                    </span>
+                  )}
                 </td>
                 <td className="py-[10px] px-16">
                   {ev.customer_name}

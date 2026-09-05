@@ -30,7 +30,9 @@ export default function WebhookGuardianTab({ lastMessage }) {
         customer_name: order.customer_name,
         product: order.product,
         timestamp: order.created_at,
-        is_demo_simulation: order.is_demo_simulation
+        is_demo_simulation: order.is_demo_simulation,
+        was_authorized_capture: order.was_authorized_capture,
+        action: order.action
       }));
       setFeed(simulatedFeed);
     } catch (err) {

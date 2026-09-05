@@ -61,6 +61,12 @@ RECOVERY_ACTIONS: dict[str, dict] = {
         "retry_after_minutes": None,
         "api_call": "POST /payment_links/abandoned_cart",
     },
+    "UNCAPTURED_AUTHORIZED": {
+        "action": "CAPTURE_AND_RECOVER",
+        "description": "Payment authorized on Razorpay ledger but uncaptured on merchant side. Missing merchant order. Auto-capture required.",
+        "retry_after_minutes": None,
+        "api_call": "POST /v1/payments/{id}/capture",
+    },
 }
 
 # Fallback for any unrecognized failure class

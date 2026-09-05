@@ -129,6 +129,8 @@ export function getStatusDisplay(status) {
     escalated: { color: '#FF4D6A', label: 'Escalated' },
     human_review: { color: '#F5A623', label: 'Review' },
     skipped: { color: '#8B90A7', label: 'Skipped' },
+    pending: { color: '#F5A623', label: 'Authorized (Uncaptured)' },
+    captured: { color: '#2DD4A0', label: 'Captured' },
   };
   return map[status] || { color: '#3D4266', label: status };
 }
@@ -144,10 +146,13 @@ export function getActionLabel(action) {
     RETRY_IMMEDIATE: 'Retried immediately',
     SEND_REMINDER: 'Sent reminder',
     SEND_UPDATE_LINK: 'Sent update link',
-    HUMAN_REVIEW: 'Flagged for review',
-    ESCALATE_AND_HALT: 'Escalated',
+    HUMAN_REVIEW: 'Queued for review',
+    ESCALATE_AND_HALT: 'Halted batch',
+    REPLAY_WEBHOOK: 'Replayed webhook',
+    CAPTURE_AND_RECOVER: 'Auto-Capture & Replay',
+    'POST /v1/payments/{id}/capture': 'Auto-Captured via API',
   };
-  return labels[action] || action;
+  return labels[action] || action || '—';
 }
 
 /**
