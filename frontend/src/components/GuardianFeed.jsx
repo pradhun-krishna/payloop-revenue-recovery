@@ -2,6 +2,13 @@ import React from 'react';
 import { formatINRFromRupees } from '../lib/utils';
 
 export default function GuardianFeed({ events }) {
+  // Sort so SIMULATED transactions are ALWAYS pinned to Row #1 at the top!
+  const sortedEvents = [...events].sort((a, b) => {
+    if (a.is_demo_simulation && !b.is_demo_simulation) return -1;
+    if (!a.is_demo_simulation && b.is_demo_simulation) return 1;
+    return 0;
+  });
+
   return (
     <div className="bg-bg-surface border border-border rounded-card overflow-hidden">
       <div className="px-16 py-12 border-b border-border">
@@ -19,15 +26,15 @@ export default function GuardianFeed({ events }) {
             </tr>
           </thead>
           <tbody className="text-[12px] text-text-secondary">
-            {events.length === 0 && (
+            {sortedEvents.length === 0 && (
               <tr>
                 <td colSpan="5" className="py-24 text-center text-text-tertiary">
                   No orders recovered yet.
                 </td>
               </tr>
             )}
-            {events.map((ev, i) => (
-              <tr key={i} className={`border-b transition-colors ${ev.is_demo_simulation ? 'border-accent/50 bg-accent/10 shadow-[inset_0_0_12px_rgba(var(--color-accent),0.2)]' : 'border-border/30 hover:bg-bg-elevated/30'}`}>
+            {sortedEvents.map((ev, i) => (
+              <tr key={i} className={`border-b transition-colors ${ev.is_demo_simulation ? 'border-accent bg-accent/15 shadow-[inset_0_0_12px_rgba(59,130,246,0.3)] font-semibold' : 'border-border/30 hover:bg-bg-elevated/30'}`}>
                 <td className="py-[10px] px-16 font-mono text-[11px]">
                   {new Date(ev.timestamp).toLocaleTimeString('en-IN', { hour12: false })}
                 </td>

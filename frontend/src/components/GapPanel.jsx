@@ -5,6 +5,9 @@ export default function GapPanel({ gaps }) {
   if (!gaps) return null;
 
   const sortedGaps = [...gaps].sort((a, b) => {
+    // Demo simulations ALWAYS pinned to Card #1 at the top!
+    if (a.is_demo_simulation && !b.is_demo_simulation) return -1;
+    if (!a.is_demo_simulation && b.is_demo_simulation) return 1;
     const sevMap = { high: 3, medium: 2, low: 1 };
     return sevMap[b.severity] - sevMap[a.severity];
   });

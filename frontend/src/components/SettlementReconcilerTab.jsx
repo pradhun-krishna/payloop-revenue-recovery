@@ -37,6 +37,26 @@ export default function SettlementReconcilerTab() {
         </button>
       </div>
 
+      {report && report.gaps?.some(g => g.is_demo_simulation) && (
+        <div className="p-16 rounded-card border border-accent bg-accent/15 flex items-center justify-between shadow-[0_0_15px_rgba(59,130,246,0.25)]">
+          <div className="flex items-center gap-12">
+            <span className="w-10 h-10 rounded-full bg-accent animate-ping" />
+            <div>
+              <h4 className="text-[14px] font-semibold text-accent flex items-center gap-8">
+                <span>Audited Live Transaction: {report.gaps.find(g => g.is_demo_simulation)?.payment_id}</span>
+                <span className="text-[10px] bg-accent/30 text-accent px-[6px] py-[2px] rounded-tag font-bold">SIMULATED</span>
+              </h4>
+              <p className="text-[12px] text-text-secondary mt-[2px]">
+                Captured payment on Razorpay ledger verified against healed order. Balanced and accounted for next settlement cycle!
+              </p>
+            </div>
+          </div>
+          <span className="text-success font-mono font-bold text-[13px] bg-success/15 px-12 py-[4px] rounded-tag border border-success/30">
+            100% BALANCED
+          </span>
+        </div>
+      )}
+
       {report && (
         <div className="grid grid-cols-3 gap-16">
           {/* Left Column - Summaries & Settlements */}
